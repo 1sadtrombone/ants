@@ -141,7 +141,7 @@ function Phero:new(gridx, gridy, D, evap_rate, color)
    o.D = D
    o.evap_rate = evap_rate
 
-   o.threshold = 0.001
+   o.threshold = 0.01 * D
    o.densities = SparseArray:new(math.ceil(gameWidth/o.gridx), o.threshold)
 
    return o
@@ -156,6 +156,17 @@ function Phero:add(x, y, amount)
    self.densities:add(i,j,amount)
    
 end
+
+function Phero:get_total()
+   local is, js = self.densities:get_nonnil_inds()
+   local tot = 0
+   for i = 1, #is do
+      tot = tot + (self.densities:iloc(is[i], js[i]) or 0)
+   end
+   return tot
+end
+
+
 
 function Phero:diffuse(dt)
 
@@ -186,14 +197,6 @@ function Phero:diffuse(dt)
    for i = 1, #is do
       for ii = 1, 5 do
 	 density_changes:add(is[i]+dis[ii], js[i]+djs[ii], self.D * dt * self.densities:laplacian(is[i]+dis[ii], js[i]+djs[ii]))
-	 if i > 1 then
-	    print("density change")
-	    print(density_changes:iloc(is[i]+dis[ii], js[i]+djs[ii]))
-	    print("di")
-	    print(dis[ii])
-	    print("dj")
-	    print(djs[ii])
-	 end
       end
    end
 
@@ -225,7 +228,6 @@ function Phero:draw()
 	 love.graphics.rectangle("fill", x, y, self.gridx, self.gridy)
       end
    end
-   
 end
 
 
@@ -237,7 +239,7 @@ World = {
 function love.load()
 
    -- gridx, gridy, D, evap_rate, color
-   trail_phero = Phero:new(10, 10, 0.1, 0.01, {0, 1, 1})
+   trail_phero = Phero:new(10, 10, 0.1, 0, {0, 1, 1})
    table.insert(World.pheros, trail_phero)
 
    text = "not ok"
@@ -259,13 +261,15 @@ function love.update(dt)
       x, y = love.mouse.getPosition( )
       World.pheros[1]:add(x,y,1)
    end
+
+   text = trail_phero:get_total()
    
 end
 
 
 function love.draw()
 
-   -- love.graphics.setColor(0,0,0)
+   love.graphics.setColor(1,1,1)
    --love.graphics.clear()
 
    love.graphics.print(text, 400, 300)
