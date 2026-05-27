@@ -68,20 +68,29 @@ function Ant:assess(dt)
 
       local turn_angle = math.pi / 2 * sigmoid(-self.happy)
       local turn_direction
-      if math.random() > happy_a/(happy_a + happy_b) then
+
+      if happy_a * happy_b > 0 then
+	 -- same sign
+	 local check = math.abs(happy_a)/(math.abs(happy_a)+math.abs(happy_b))
+	 if math.random() > check then
+	    turn_direction = 1
+	 else
+	    turn_direction = -1
+	 end
+	 
+      elseif happy_a > 0 then
+	 -- b is negative
 	 turn_direction = 1
       else
 	 turn_direction = -1
       end
-      
+            
       self.facing = self.facing + turn_direction * turn_angle
    end
  
 end
 
 function Ant:smell()
-
-   -- TODO iterate over all pheromones, multiplying their density by their ant happy factor
 
    -- check what pheromones are under the antennae
    local happy_a, happy_b = 0, 0
