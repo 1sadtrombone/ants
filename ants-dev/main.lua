@@ -32,7 +32,7 @@ function Ant:new(x, y, facing)
 
    o.speed = 10
 
-   o.trail_amount = 0.03 -- amount of trail pheromone to leave
+   o.trail_amount = 0.01 -- amount of trail pheromone to leave
 
    o.antenna_size = 7 -- cm?
    o.antenna_arot = -math.pi/6
@@ -66,7 +66,7 @@ function Ant:assess(dt)
       self.assess_cooldown = 3 * sigmoid(self.happy)
       self.assess_duration = 7 * sigmoid(-self.happy)
 
-      local turn_angle = math.pi / 2 * sigmoid(-self.happy)
+      local turn_angle = math.pi / 6 * sigmoid(-self.happy)
       local turn_direction
       if math.random() > happy_a/(happy_a + happy_b) then
 	 turn_direction = 1
