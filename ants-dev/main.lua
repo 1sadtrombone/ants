@@ -227,7 +227,7 @@ function Phero:draw()
       is, js = self.densities:get_nonnil_inds()
       for i = 1, #is do
 	 local alpha = math.min(1, (self.densities:iloc(is[i], js[i]) or 0)/10)
-	 love.graphics.setColor(0,1,1, alpha)
+	 love.graphics.setColor(self.color[1], self.color[2], self.color[3], alpha)
 	 local x = (is[i]-1) * self.gridx
 	 local y = (js[i]-1) * self.gridy -- may need centering?
 	 love.graphics.rectangle("fill", x, y, self.gridx, self.gridy)
@@ -244,11 +244,18 @@ World = {
 function love.load()
 
    -- gridx, gridy, D, evap_rate, color
-   trail_phero = Phero:new(10, 10, 0.1, 0, {0, 1, 1})
+
+   alarm_phero = Phero:new(25, 25, 1, 0.5, {1,0,0})
+   table.insert(World.pheros, alarm_phero)
+
+   food_phero = Phero:new(20, 20, 1, 0.5, {0.5,1,0.1})
+   table.insert(World.pheros, food_phero)
+
+   trail_phero = Phero:new(5, 5, 0.01, 0, {0, 1, 1})
    table.insert(World.pheros, trail_phero)
 
    text = "not ok"
-   text = World.pheros[1].densities.thresh
+   --text = World.pheros[1].densities.thresh
    
 end
 
@@ -264,10 +271,22 @@ function love.update(dt)
 
    if love.mouse.isDown(1) then
       x, y = love.mouse.getPosition( )
-      World.pheros[1]:add(x,y,1)
+      World.pheros[3]:add(x,y,1)
    end
 
-   text = trail_phero:get_total()
+   
+   if love.mouse.isDown(2) then
+      x, y = love.mouse.getPosition( )
+      World.pheros[2]:add(x,y,5)
+   end
+
+   if love.mouse.isDown(3) then
+      x, y = love.mouse.getPosition( )
+      World.pheros[1]:add(x,y,10)
+   end
+
+
+   --text = trail_phero:get_total()
    
 end
 
