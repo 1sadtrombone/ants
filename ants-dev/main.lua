@@ -32,6 +32,8 @@ function Ant:new(x, y, facing)
 
    o.speed = 10
 
+   o.trail_amount = 1 -- amount of trail pheromone to leave
+
    o.antenna_size = 7 -- cm?
    o.antenna_arot = -math.pi/6
    o.antenna_brot = math.pi/6
@@ -55,7 +57,7 @@ function Ant:assess(dt)
 
    -- smell once, and if there's time, turn and smell again
 
-   if self.time < (self.smell_count + 1) * self.smell_duration then
+   if self.time > self.smell_count * self.smell_duration then
 
       self.smell_count = self.smell_count + 1
 
@@ -395,7 +397,9 @@ end
 function love.update(dt)
 
    if #World.ants > 0 then
-      text = math.pi / 2 * sigmoid(-World.ants[1].happy)
+      --text = math.pi / 2 * sigmoid(-World.ants[1].happy)
+      --text = World.ants[1].smell_count
+      text = World.ants[1].time
    end
    
 
