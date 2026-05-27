@@ -32,7 +32,7 @@ function Ant:new(x, y, facing)
 
    o.speed = 10
 
-   o.trail_amount = 0.01 -- amount of trail pheromone to leave
+   o.trail_amount = 0.03 -- amount of trail pheromone to leave
 
    o.antenna_size = 7 -- cm?
    o.antenna_arot = -math.pi/6
@@ -59,20 +59,19 @@ function Ant:assess(dt)
 
    if self.time > self.smell_count * self.smell_duration then
 
+      local happy_a, happy_b = self:smell()
       self.smell_count = self.smell_count + 1
 
-      local happy_a, happy_b = self:smell()
-      
-      self.happy = (happy_a + happy_b) / 2 -- update happy. Maybe some memory?
-
-      -- TODO update assess timing
+      self.happy = (happy_a + happy_b) / 2 -- Maybe some memory?
+      self.assess_cooldown = 3 * sigmoid(self.happy)
+      self.assess_duration = 7 * sigmoid(-self.happy)
 
       local turn_angle = math.pi / 2 * sigmoid(-self.happy)
       local turn_direction
       if math.random() > happy_a/(happy_a + happy_b) then
-	 turn_direction = -1
-      else
 	 turn_direction = 1
+      else
+	 turn_direction = -1
       end
       
       self.facing = self.facing + turn_direction * turn_angle
@@ -124,7 +123,7 @@ function Ant:update(dt)
    if self.mode ~= "assess" then
 
       if self.time >= self.assess_cooldown then
-	 self.time = 0
+	 self.time = 0	
 	 self.mode = "assess"
       end
 
@@ -401,7 +400,9 @@ function love.update(dt)
    if #World.ants > 0 then
       --text = math.pi / 2 * sigmoid(-World.ants[1].happy)
       --text = World.ants[1].smell_count
-      text = World.ants[1].time
+      --text = World.ants[1].time
+      local ant = World.ants[1]
+      text = string.format("%f\n%f\n%f\n", ant.happy, ant.assess_cooldown, ant.assess_duration)
    end
    
 
