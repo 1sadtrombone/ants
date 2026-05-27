@@ -17,8 +17,9 @@ function Ant:new(x, y, facing)
    o.facing = facing
    o.prev_facing = facing
 
-   o.assess_period = 2 -- happier ants should adjust this down
+   o.assess_period = 2 
    o.until_assess = o.assess_period -- s
+   o.assess_duration = 1 -- happier ants should adjust this down
    o.prev_happy = 0
 
    o.antenna_size = 0.1 -- cm?
@@ -217,6 +218,10 @@ function Phero:update(dt)
 end
 
 function Phero:draw()
+
+   -- TODO scale with push library
+   -- TODO zoom
+   -- TODO pan (draw to canvas then apply camera transforms?)
 
    if self.visible then
       is, js = self.densities:get_nonnil_inds()
