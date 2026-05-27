@@ -11,6 +11,7 @@ function Ant:new(x, y, facing)
    setmetatable(o, self)
    self.__index = self
 
+   o.mode = "walk"
 
    o.x = x
    o.y = y
@@ -22,7 +23,15 @@ function Ant:new(x, y, facing)
    o.assess_duration = 1 -- happier ants should adjust this down
    o.prev_happy = 0
 
+   o.speed = 1
+
    o.antenna_size = 0.1 -- cm?
+   o.antenna_arot = -math.pi/6
+   o.antenna_brot = math.pi/6
+
+   o.abs_radius = 10
+   o.thorax_len = 15
+   o.head_radius = 10
 
    return o
    
@@ -49,20 +58,45 @@ function Ant:grab()
    
 end
 
+function Ant:new_facing()
+
+   self.facing = love.math.randomNormal(1 / self., self.facing)
+   
+end
 
 function Ant:update(dt)
 
-   self.until_assess = self.until_assess - dt
-   if self.until_assess <= 0 then
-      self.until_assess = self.assess_period
-      self:assess()
-      -- some waiting animation for a bit?
+   if self.mode ~= "assess" then
+
+      self.until_assess = self.until_assess - dt
+      if self.until_assess <= 0 then
+	 self.until_assess = self.assess_period
+	 self.mode = "assess"
+      end
+
+   end
+   
+   if self.mode == "walk" then
+
+      self.x = self.x + self.speed * dt * math.cos(self.facing)
+      self.y = self.y + self.speed * dt * math.sin(self.facing)
+
+      self:new_facing()
    end
    
    
 end
 
 function Ant:draw()
+
+   love.graphics.setColor(love.math.colorFromBytes(221,195,162))
+
+   love.graphics.circle("fill", self.x, self.y, self.abs_radius)
+   local head_x = self.x + self.thorax_len * math.cos(self.facing)
+   local head_y = self.y + self.thorax_len * math.sin(self.facing) 
+   love.graphics.circle("fill", head_x, head_y, self.head_radius)
+   -- TODO draw antennae
+   
 end
 
 SparseArray = {}
@@ -310,11 +344,10 @@ end
 function love.mousepressed(x, y, button, istouch)
    
    if button == 1 then
-      -- TODO only registers on x = y lines, with top left errorring.. something funny here.
       World.pheros[1]:add(x,y,1)
    end
 
-   if button == 2 then
+   if button == 5 then
       local new_ant = Ant:new(x,y,math.random(0,2*math.pi))
       table.insert(World.ants, new_ant)
    end
