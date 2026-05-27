@@ -32,7 +32,7 @@ function Ant:new(x, y, facing)
 
    o.speed = 10
 
-   o.trail_amount = 0.01 -- amount of trail pheromone to leave
+   o.trail_amount = 0.03 -- amount of trail pheromone to leave
 
    o.antenna_size = 7 -- cm?
    o.antenna_arot = -math.pi/6
@@ -64,9 +64,9 @@ function Ant:assess(dt)
 
       self.happy = (happy_a + happy_b) / 2 -- Maybe some memory?
       self.assess_cooldown = 3 * sigmoid(self.happy)
-      self.assess_duration = 7 * sigmoid(-self.happy)
+      self.assess_duration = 3 * sigmoid(-self.happy)
 
-      local turn_angle = math.pi / 6 * sigmoid(-self.happy)
+      local turn_angle = math.pi / 2 * sigmoid(-self.happy)
       local turn_direction
       if math.random() > happy_a/(happy_a + happy_b) then
 	 turn_direction = 1
@@ -388,7 +388,7 @@ function love.load()
    food_phero = Phero:new(20, 20, 1, 0.5, {0.5,1,0.1}, 3)
    table.insert(World.pheros, food_phero)
 
-   trail_phero = Phero:new(5, 5, 0.01, 0, {0, 1, 1}, 1)
+   trail_phero = Phero:new(3, 3, 0.01, 0, {0, 1, 1}, 1)
    table.insert(World.pheros, trail_phero)
 
    text = "not ok"
