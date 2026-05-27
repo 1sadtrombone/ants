@@ -32,7 +32,7 @@ function Ant:new(x, y, facing)
 
    o.speed = 10
 
-   o.trail_amount = 1 -- amount of trail pheromone to leave
+   o.trail_amount = 0.01 -- amount of trail pheromone to leave
 
    o.antenna_size = 7 -- cm?
    o.antenna_arot = -math.pi/6
@@ -134,6 +134,8 @@ function Ant:update(dt)
 
       self.x = self.x + self.speed * dt * math.cos(self.facing)
       self.y = self.y + self.speed * dt * math.sin(self.facing)
+
+      World.pheros[3]:add(self.x, self.y, self.trail_amount)
 
    end
 
