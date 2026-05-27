@@ -17,38 +17,59 @@ function Ant:new(x, y, facing)
    o.y = y
    o.facing = facing
    o.prev_facing = facing
+   
+   o.time = 0
+   o.assess_cooldown = 2 -- happier ants should adjust this up
+   o.assess_duration = 0.5 -- happier ants should adjust this down
+   o.smell_duration = 0.25 -- fixed (presumably by biology)
+   o.happy = 1
+   o.prev_happy = 1
 
-   o.assess_period = 2 
-   o.until_assess = o.assess_period -- s
-   o.assess_duration = 1 -- happier ants should adjust this down
-   o.prev_happy = 0
+   o.speed = 10
 
-   o.speed = 1
-
-   o.antenna_size = 0.1 -- cm?
+   o.antenna_size = 7 -- cm?
    o.antenna_arot = -math.pi/6
    o.antenna_brot = math.pi/6
 
-   o.abs_radius = 10
-   o.thorax_len = 15
-   o.head_radius = 10
+   o.abs_radius = 4
+   o.thorax_len = 7
+   o.head_radius = 4
 
    return o
    
 end
 
-function Ant:assess()
+function Ant:assess(dt)
 
    -- re-establish facing direction
    -- draw from gaussian with variance = sigmoid(1/happiness)
    -- (small variance if happy, wider if not)
 
+   -- alternate: compare antenna A/B, weight turn in happier direction
+   -- and make turning angle smaller if happier (with maybe sigmoid)
+
+   -- smell once, and if there's time, turn and smell again
+
    
+   
+
+   
+end
+
+function Ant:smell()
+
+   -- TODO iterate over all pheromones, multiplying their density by their ant happy factor
+
+   -- check what pheromones are under the antennae
+   local happy_a, happy_b
+
+   happy_a = W
+
 end
 
 function Ant:probe()
 
-   -- check what's under the antennae
+   -- check what objects are under the antennae
    
 end
 
@@ -60,17 +81,20 @@ end
 
 function Ant:new_facing()
 
-   self.facing = love.math.randomNormal(1 / self., self.facing)
+   -- depricated (for now)
+
+   self.facing = love.math.randomNormal(1 / self.happy, self.facing)
    
 end
 
 function Ant:update(dt)
 
+   self.time = self.time + dt
+
    if self.mode ~= "assess" then
 
-      self.until_assess = self.until_assess - dt
-      if self.until_assess <= 0 then
-	 self.until_assess = self.assess_period
+      if self.time >= self.assess_cooldown then
+	 self.time = 0
 	 self.mode = "assess"
       end
 
@@ -81,21 +105,57 @@ function Ant:update(dt)
       self.x = self.x + self.speed * dt * math.cos(self.facing)
       self.y = self.y + self.speed * dt * math.sin(self.facing)
 
-      self:new_facing()
    end
+
+   if self.mode == "assess" then
+
+      self:assess(dt)
+
+      if self.time >= self.assess_duration then
+	 self.time = 0
+	 self.mode = "walk"
+      end
+      
+   end   
    
-   
+end
+
+function Ant:get_head_pos()
+
+   -- return location of the head center
+
+   local head_x = self.x + self.thorax_len * math.cos(self.facing)
+   local head_y = self.y + self.thorax_len * math.sin(self.facing) 
+
+   return head_x, head_y
+end
+
+function Ant:get_antennae_pos()
+
+   -- return location of the antenna ends
+
+   local head_x, head_y, anta_x, anta_y, antb_x, antb_y
+   head_x, head_y = self:get_head_pos()
+
+   anta_x = head_x + self.antenna_size * math.cos(self.facing + self.antenna_arot)
+   anta_y = head_y + self.antenna_size * math.sin(self.facing + self.antenna_arot)
+   antb_x = head_x + self.antenna_size * math.cos(self.facing + self.antenna_brot)
+   antb_y = head_y + self.antenna_size * math.sin(self.facing + self.antenna_brot)
+
+   return anta_x, anta_y, antb_x, antb_y
+
 end
 
 function Ant:draw()
 
-   love.graphics.setColor(love.math.colorFromBytes(221,195,162))
+   love.graphics.setColor(love.math.colorFromBytes(210,180,140))
 
    love.graphics.circle("fill", self.x, self.y, self.abs_radius)
-   local head_x = self.x + self.thorax_len * math.cos(self.facing)
-   local head_y = self.y + self.thorax_len * math.sin(self.facing) 
+   head_x, head_y = self:get_head_pos()
    love.graphics.circle("fill", head_x, head_y, self.head_radius)
-   -- TODO draw antennae
+   anta_x, anta_y, antb_x, antb_y = self:get_antennae_pos()
+   love.graphics.line(head_x, head_y, anta_x, anta_y)
+   love.graphics.line(head_x, head_y, antb_x, antb_y)
    
 end
 
@@ -159,7 +219,7 @@ end
 
 Phero = {}
 
-function Phero:new(gridx, gridy, D, evap_rate, color)
+function Phero:new(gridx, gridy, D, evap_rate, color, ant_happy_factor)
 
    local o = {}
    setmetatable(o, self)
@@ -169,6 +229,8 @@ function Phero:new(gridx, gridy, D, evap_rate, color)
 
    o.visible = true
    o.color = color
+
+   o.ant_happy_factor = ant_happy_factor
 
    o.gridx = gridx -- cell width in px
    o.gridy = gridy -- cell height in px
@@ -189,6 +251,15 @@ function Phero:add(x, y, amount)
    local j = math.floor(y/self.gridy) + 1
    
    self.densities:add(i,j,amount)
+   
+end
+
+function Phero:get(x, y)
+
+   local i = math.floor(x/self.gridx) + 1
+   local j = math.floor(y/self.gridy) + 1
+   
+   return self.densities:iloc(i,j)
    
 end
 
@@ -279,21 +350,25 @@ function love.load()
 
    -- gridx, gridy, D, evap_rate, color
 
-   alarm_phero = Phero:new(25, 25, 1, 0.5, {1,0,0})
+   alarm_phero = Phero:new(25, 25, 1, 0.5, {1,0,0}, -5)
    table.insert(World.pheros, alarm_phero)
 
-   food_phero = Phero:new(20, 20, 1, 0.5, {0.5,1,0.1})
+   food_phero = Phero:new(20, 20, 1, 0.5, {0.5,1,0.1}, 3)
    table.insert(World.pheros, food_phero)
 
-   trail_phero = Phero:new(5, 5, 0.01, 0, {0, 1, 1})
+   trail_phero = Phero:new(5, 5, 0.01, 0, {0, 1, 1}, 1)
    table.insert(World.pheros, trail_phero)
 
    text = "not ok"
    --text = World.pheros[1].densities.thresh
-   
 end
 
 function love.update(dt)
+
+   if #World.ants > 0 then
+      text = World.ants[1].happy or 0
+   end
+   
 
    for _, ant in ipairs(World.ants) do
       ant:update(dt)
