@@ -3,6 +3,10 @@ local push = require "push"
 local gameWidth, gameHeight = 1080, 720 --fixed game resolution
 local windowWidth, windowHeight = love.window.getDesktopDimensions()
 
+local function sigmoid(x)
+    return 1 / (1 + math.exp(-x))
+end
+
 Ant = {}
 
 function Ant:new(x, y, facing)
@@ -22,6 +26,7 @@ function Ant:new(x, y, facing)
    o.assess_cooldown = 2 -- happier ants should adjust this up
    o.assess_duration = 0.5 -- happier ants should adjust this down
    o.smell_duration = 0.25 -- fixed (presumably by biology)
+   o.smell_count = 0 -- look I need it ok
    o.happy = 1
    o.prev_happy = 1
 
@@ -50,10 +55,27 @@ function Ant:assess(dt)
 
    -- smell once, and if there's time, turn and smell again
 
-   
-   
+   if self.time < (self.smell_count + 1) * self.smell_duration then
 
-   
+      self.smell_count = self.smell_count + 1
+
+      local happy_a, happy_b = self:smell()
+      
+      self.happy = (happy_a + happy_b) / 2 -- update happy. Maybe some memory?
+
+      -- TODO update assess timing
+
+      local turn_angle = math.pi / 2 * sigmoid(-self.happy)
+      local turn_direction
+      if math.random() > happy_a/(happy_a + happy_b) then
+	 turn_direction = -1
+      else
+	 turn_direction = 1
+      end
+      
+      self.facing = self.facing + turn_direction * turn_angle
+   end
+ 
 end
 
 function Ant:smell()
@@ -61,9 +83,15 @@ function Ant:smell()
    -- TODO iterate over all pheromones, multiplying their density by their ant happy factor
 
    -- check what pheromones are under the antennae
-   local happy_a, happy_b
+   local happy_a, happy_b = 0, 0
+   local anta_x, anta_y, antb_x, antb_y = self:get_antennae_pos()
 
-   happy_a = W
+   for i, phero in ipairs(World.pheros) do
+      happy_a = happy_a + phero.ant_happy_factor * phero:get(anta_x, anta_y)
+      happy_b = happy_b + phero.ant_happy_factor * phero:get(antb_x, antb_y)
+   end
+
+   return happy_a, happy_b   
 
 end
 
@@ -113,6 +141,7 @@ function Ant:update(dt)
 
       if self.time >= self.assess_duration then
 	 self.time = 0
+	 self.smell_count = 0
 	 self.mode = "walk"
       end
       
@@ -259,7 +288,7 @@ function Phero:get(x, y)
    local i = math.floor(x/self.gridx) + 1
    local j = math.floor(y/self.gridy) + 1
    
-   return self.densities:iloc(i,j)
+   return self.densities:iloc(i,j) or 0
    
 end
 
@@ -366,7 +395,7 @@ end
 function love.update(dt)
 
    if #World.ants > 0 then
-      text = World.ants[1].happy or 0
+      text = math.pi / 2 * sigmoid(-World.ants[1].happy)
    end
    
 
