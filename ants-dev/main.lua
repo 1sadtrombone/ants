@@ -29,6 +29,7 @@ function Ant:new(x, y, facing)
    o.smell_count = 0 -- look I need it ok
    o.happy = 1
    o.prev_happy = 1
+   o.happy_thresh = 0.5 -- happiness diff required for mode change
 
    o.speed = 10
 
@@ -48,47 +49,33 @@ end
 
 function Ant:assess(dt)
 
-   -- re-establish facing direction
-   -- draw from gaussian with variance = sigmoid(1/happiness)
-   -- (small variance if happy, wider if not)
-
-   -- alternate: compare antenna A/B, weight turn in happier direction
+   -- compare antenna A/B, weight turn in happier direction
    -- and make turning angle smaller if happier (with maybe sigmoid)
 
-   -- smell once, and if there's time, turn and smell again
+   -- smell once, and if there's time, turn and smell more
 
-   if self.time > self.smell_count * self.smell_duration then
+   self.time = self.time + dt
 
-      local happy_a, happy_b = self:smell()
-      self.smell_count = self.smell_count + 1
+   if self.time > self.assess_cooldown then
 
-      self.happy = (happy_a + happy_b) / 2 -- Maybe some memory?
-      self.assess_cooldown = 3 * sigmoid(self.happy)
-      self.assess_duration = 3 * sigmoid(-self.happy)
+      self.sniff_count = 0
 
-      local turn_angle = math.pi / 2 * sigmoid(-self.happy)
-      local turn_direction, check
+      if self.time + self.assess_cooldown < self.assess_duration then
 
-      -- can surely be made more elegant
-      if happy_a == 0 and happy_b == 0 then
-	 check = 1/2
-      elseif happy_a <= 0 then
-	 check = 0
-      elseif happy_b <= 0 then
-	 check = 1
+	    if self.prev_happy - self.happy > self.happy_thresh then
+	       self:neg_mood_shift()
+	    elseif self.happy - self.prev_happy > self.happy_thresh then
+	       self:pos_mood_shift()
+	    end
+
+	    self:sniff(dt)
+	    
       else
-	 check = math.abs(happy_a)/(math.abs(happy_a)+math.abs(happy_b))
+	 self.time = 0
       end
       
-      if math.random() > check then
-	 turn_direction = 1
-      else
-	 turn_direction = -1
-      end
-	             
-      self.facing = self.facing + turn_direction * turn_angle
-   end
- 
+   end   
+   
 end
 
 function Ant:smell()
@@ -105,6 +92,56 @@ function Ant:smell()
    return happy_a, happy_b   
 
 end
+
+function Ant:sniff(dt)
+
+   --
+
+   if self.time > self.smell_count * self.smell_duration then
+
+      self.smell_count = self.smell_count + 1
+
+      
+      
+      local happy_a, happy_b = self:smell()
+      self.smell_count = self.smell_count + 1
+      
+      self.prev_happy = self.happy
+      self.happy = (happy_a + happy_b) / 2
+
+      
+
+
+end
+
+
+function Ant:neg_mood_shift(dt)
+
+   self.time = 0
+   
+   if self.mode == "walk" then
+      self.mode = "search"
+      
+      self.assess_cooldown = 5
+      self.assess_duration = 2
+
+   end
+
+end
+
+function Ant:pos_mood_shift(dt)
+
+   if self.mode == "search" then
+      self.mode = "walk"
+      self:sniff(dt)
+      
+      self.assess_cooldown = 0.5
+      self.assess_duration = 0.1
+   end
+   
+end
+
+
 
 function Ant:probe()
 
@@ -130,15 +167,8 @@ function Ant:update(dt)
 
    self.time = self.time + dt
 
-   if self.mode ~= "assess" then
+   self:assess(dt)
 
-      if self.time >= self.assess_cooldown then
-	 self.time = 0	
-	 self.mode = "assess"
-      end
-
-   end
-   
    if self.mode == "walk" then
 
       self.x = self.x + self.speed * dt * math.cos(self.facing)
@@ -146,20 +176,7 @@ function Ant:update(dt)
 
       World.pheros[3]:add(self.x, self.y, self.trail_amount)
 
-   end
-
-   if self.mode == "assess" then
-
-      self:assess(dt)
-
-      if self.time >= self.assess_duration then
-	 self.time = 0
-	 self.smell_count = 0
-	 self.mode = "walk"
-      end
-      
    end   
-   
 end
 
 function Ant:get_head_pos()
