@@ -56,6 +56,8 @@ function Ant:assess(dt)
 
    if self.time > self.assess_cooldown then
 
+      text = "cooldown_elapsed"
+
       self.sniff_count = 0
 
       if self.time < self.assess_duration + self.assess_cooldown then
@@ -66,11 +68,10 @@ function Ant:assess(dt)
 	    self:pos_mood_shift()
 	 end
 
-	 text = "about to execute sniff"
 	 self:sniff(dt)
-	 text = "sniff executed"
 	 
       else
+	 text = "new_cycle"
 	 self.time = 0
       end
       
@@ -98,8 +99,6 @@ function Ant:sniff(dt)
    -- if enough time has passed to rotate and smell again, do so
 
    if self.time > self.smell_count * self.smell_duration then
-
-      text = "executing sniff"
 
       self.smell_count = self.smell_count + 1
 
@@ -139,8 +138,10 @@ function Ant:neg_mood_shift(dt)
       text = "search"
       self.mode = "search"
       
-      self.assess_cooldown = 5
+      self.assess_cooldown = 1
       self.assess_duration = 2
+      self.speed = 5
+      self.trail_amount = 0.00
 
    end
 
@@ -157,6 +158,8 @@ function Ant:pos_mood_shift(dt)
       
       self.assess_cooldown = 0.5
       self.assess_duration = 0.1
+      self.speed = 10
+      self.trail_amount = 0.03
    end
    
 end
@@ -189,12 +192,10 @@ function Ant:update(dt)
 
    self:assess(dt)
 
-   if self.mode == "walk" then
-
-      self.x = self.x + self.speed * dt * math.cos(self.facing)
-      self.y = self.y + self.speed * dt * math.sin(self.facing)
-
-      World.pheros[3]:add(self.x, self.y, self.trail_amount)
+   self.x = self.x + self.speed * dt * math.cos(self.facing)
+   self.y = self.y + self.speed * dt * math.sin(self.facing)
+   
+   World.pheros[3]:add(self.x, self.y, self.trail_amount)
 
    end   
 end
