@@ -54,22 +54,22 @@ function Ant:assess(dt)
 
    -- smell once, and if there's time, turn and smell more
 
-   self.time = self.time + dt
-
    if self.time > self.assess_cooldown then
+
+      text = "assess_cooldown_elapsed"
 
       self.sniff_count = 0
 
       if self.time + self.assess_cooldown < self.assess_duration then
-
-	    if self.prev_happy - self.happy > self.happy_thresh then
-	       self:neg_mood_shift()
-	    elseif self.happy - self.prev_happy > self.happy_thresh then
-	       self:pos_mood_shift()
-	    end
-
-	    self:sniff(dt)
-	    
+	 
+	 if self.prev_happy - self.happy > self.happy_thresh then
+	    self:neg_mood_shift()
+	 elseif self.happy - self.prev_happy > self.happy_thresh then
+	    self:pos_mood_shift()
+	 end
+	 
+	 self:sniff(dt)
+	 
       else
 	 self.time = 0
       end
@@ -95,23 +95,35 @@ end
 
 function Ant:sniff(dt)
 
-   --
+   -- if enough time has passed to rotate and smell again, do so
 
    if self.time > self.smell_count * self.smell_duration then
 
       self.smell_count = self.smell_count + 1
 
-      
-      
       local happy_a, happy_b = self:smell()
-      self.smell_count = self.smell_count + 1
-      
       self.prev_happy = self.happy
       self.happy = (happy_a + happy_b) / 2
 
+      if happy_a == 0 and happy_b == 0 then
+         check = 1/2
+      elseif happy_a <= 0 then
+	 check = 0
+      elseif happy_b <= 0 then
+	 check = 1
+      else check = math.abs(happy_a)/(math.abs(happy_a)+math.abs(happy_b))
+      end
+
+      if math.random() > check then
+	 turn_direction = 1
+      else
+	 turn_direction = -1
+      end
+
       
-
-
+      
+      self.facing = self.facing + turn_direction * turn_angle
+   end
 end
 
 
@@ -120,6 +132,7 @@ function Ant:neg_mood_shift(dt)
    self.time = 0
    
    if self.mode == "walk" then
+      text = "search"
       self.mode = "search"
       
       self.assess_cooldown = 5
@@ -131,7 +144,10 @@ end
 
 function Ant:pos_mood_shift(dt)
 
+   self.time = 0
+
    if self.mode == "search" then
+      text = "walk"
       self.mode = "walk"
       self:sniff(dt)
       
@@ -428,8 +444,9 @@ function love.update(dt)
       --text = math.pi / 2 * sigmoid(-World.ants[1].happy)
       --text = World.ants[1].smell_count
       --text = World.ants[1].time
+      --text = World.ants[1].happy
       local ant = World.ants[1]
-      text = string.format("%f\n%f\n%f\n", ant.happy, ant.assess_cooldown, ant.assess_duration)
+      --text = string.format("%f\n%f\n%f\n", ant.happy, ant.assess_cooldown, ant.assess_duration)
    end
    
 
