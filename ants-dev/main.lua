@@ -392,7 +392,7 @@ function love.load()
 
    -- gridx, gridy, D, evap_rate, color
 
-   alarm_phero = Phero:new(25, 25, 1, 0.5, {1,0,0}, -5)
+   alarm_phero = Phero:new(5, 5, 1, 0.5, {1,0,0}, -5)
    table.insert(World.pheros, alarm_phero)
 
    food_phero = Phero:new(20, 20, 1, 0.5, {0.5,1,0.1}, 3)
