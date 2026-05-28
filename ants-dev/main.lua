@@ -56,19 +56,19 @@ function Ant:assess(dt)
 
    if self.time > self.assess_cooldown then
 
-      text = "assess_cooldown_elapsed"
-
       self.sniff_count = 0
 
-      if self.time + self.assess_cooldown < self.assess_duration then
+      if self.time < self.assess_duration + self.assess_cooldown then
 	 
 	 if self.prev_happy - self.happy > self.happy_thresh then
 	    self:neg_mood_shift()
 	 elseif self.happy - self.prev_happy > self.happy_thresh then
 	    self:pos_mood_shift()
 	 end
-	 
+
+	 text = "about to execute sniff"
 	 self:sniff(dt)
+	 text = "sniff executed"
 	 
       else
 	 self.time = 0
@@ -99,12 +99,17 @@ function Ant:sniff(dt)
 
    if self.time > self.smell_count * self.smell_duration then
 
+      text = "executing sniff"
+
       self.smell_count = self.smell_count + 1
 
       local happy_a, happy_b = self:smell()
       self.prev_happy = self.happy
       self.happy = (happy_a + happy_b) / 2
 
+      local turn_angle = math.pi / 2 * sigmoid(-self.happy)
+      local turn_direction, check
+      
       if happy_a == 0 and happy_b == 0 then
          check = 1/2
       elseif happy_a <= 0 then
@@ -119,10 +124,9 @@ function Ant:sniff(dt)
       else
 	 turn_direction = -1
       end
-
-      
       
       self.facing = self.facing + turn_direction * turn_angle
+      
    end
 end
 
