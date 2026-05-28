@@ -67,24 +67,25 @@ function Ant:assess(dt)
       self.assess_duration = 3 * sigmoid(-self.happy)
 
       local turn_angle = math.pi / 2 * sigmoid(-self.happy)
-      local turn_direction
+      local turn_direction, check
 
-      if happy_a * happy_b > 0 then
-	 -- same sign
-	 local check = math.abs(happy_a)/(math.abs(happy_a)+math.abs(happy_b))
-	 if math.random() > check then
-	    turn_direction = 1
-	 else
-	    turn_direction = -1
-	 end
-	 
-      elseif happy_a > 0 then
-	 -- b is negative
+      -- can surely be made more elegant
+      if happy_a == 0 and happy_b == 0 then
+	 check = 1/2
+      elseif happy_a <= 0 then
+	 check = 0
+      elseif happy_b <= 0 then
+	 check = 1
+      else
+	 check = math.abs(happy_a)/(math.abs(happy_a)+math.abs(happy_b))
+      end
+      
+      if math.random() > check then
 	 turn_direction = 1
       else
 	 turn_direction = -1
       end
-            
+	             
       self.facing = self.facing + turn_direction * turn_angle
    end
  
