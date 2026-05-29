@@ -56,22 +56,21 @@ function Ant:assess(dt)
 
    if self.time > self.assess_cooldown then
 
-      text = "cooldown_elapsed"
+      text = self.mode
 
-      self.sniff_count = 0
+      self.smell_count = 0
 
       if self.time < self.assess_duration + self.assess_cooldown then
+
+	 self:sniff(dt)
 	 
 	 if self.prev_happy - self.happy > self.happy_thresh then
 	    self:neg_mood_shift()
 	 elseif self.happy - self.prev_happy > self.happy_thresh then
 	    self:pos_mood_shift()
 	 end
-
-	 self:sniff(dt)
 	 
       else
-	 text = "new_cycle"
 	 self.time = 0
       end
       
@@ -135,7 +134,6 @@ function Ant:neg_mood_shift(dt)
    self.time = 0
    
    if self.mode == "walk" then
-      text = "search"
       self.mode = "search"
       
       self.assess_cooldown = 1
@@ -152,7 +150,6 @@ function Ant:pos_mood_shift(dt)
    self.time = 0
 
    if self.mode == "search" then
-      text = "walk"
       self.mode = "walk"
       self:sniff(dt)
       
@@ -197,7 +194,6 @@ function Ant:update(dt)
    
    World.pheros[3]:add(self.x, self.y, self.trail_amount)
 
-   end   
 end
 
 function Ant:get_head_pos()
